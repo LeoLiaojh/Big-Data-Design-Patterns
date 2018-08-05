@@ -1,0 +1,52 @@
+#1
+CREATE DATABASE liao;
+USE liao;
+
+#2
+CREATE TABLE users 
+(user_id BIGINT, 
+screen_name STRING, 
+create_at STRING, 
+number_followers BIGINT) 
+ROW FORMAT DELIMITED 
+FIELDS TERMINATED BY '\t' 
+STORED AS TEXTFILE;
+
+#3
+CREATE TABLE tweets 
+(tweet_id BIGINT, 
+user_id BIGINT, 
+date STRING, 
+source STRING, 
+text STRING) 
+ROW FORMAT DELIMITED 
+FIELDS TERMINATED BY '\t' 
+STORED AS TEXTFILE;
+
+#4
+LOAD DATA INPATH '/user/cloudera/input-tweets-users' OVERWRITE INTO TABLE users;
+LOAD DATA INPATH '/user/cloudera/input-tweets' OVERWRITE INTO TABLE tweets;
+
+#5
+SELECT user_id, number_followers 
+FROM users 
+ORDER BY number_followers DESC 
+LIMIT 10;
+
+#6
+SELECT COUNT(*) 
+FROM users JOIN tweets 
+ON users.user_id = tweets.user_id;
+
+#7
+SELECT MIN(date), MAX(date) 
+FROM tweets;
+
+#8
+CREATE TABLE output
+STORED AS TEXTFILE
+AS
+SELECT u.user_id, COUNT(u.user_id), u.number_followers
+FROM users u JOIN tweets t
+ON u.user_id = t.user_id
+GROUP BY u.user_id, u.number_followers;

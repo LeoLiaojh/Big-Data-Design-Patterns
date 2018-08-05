@@ -1,0 +1,22 @@
+users = LOAD '/user/cloudera/input-tweets-users' USING PigStorage('\t') AS (user_id:long, screen_name:chararray, created_at:chararray, number_followers:long);
+tweets = LOAD '/user/cloudera/input-tweets' USING PigStorage('\t') AS (tweet_id:long, user_id:long, date:chararray, source:chararray, text:chararray);
+
+#1
+ordered_users = ORDER users BY number_followers DESC;
+top10_users = LIMIT ordered_users 10;
+
+#2
+joined_users = JOIN users BY user_id, tweets BY user_id;
+users_have_tweets = GROUP joined_users BY users::user_id;
+users_have_tweets_group = GROUP users_have_tweets ALL;
+total_users_have_tweets = FOREACH users_have_tweets_group GENERATE COUNT(users_have_tweets);
+
+#3
+tweets_group = GROUP tweets ALL;
+first_date = FOREACH tweets_group GENERATE MIN(tweets.date);
+last_date = FOREACH tweets_group GENERATE MAX(tweets.date);
+
+#4
+users_have_tweets_followers = GROUP joined_users BY (users::user_id, users::number_followers);
+output_dir = FOREACH users_have_tweets_followers GENERATE group, COUNT(joined_users);
+STORE output_dir INTO '/user/cloudera/pig-output';
